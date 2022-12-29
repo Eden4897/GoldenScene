@@ -3,14 +3,9 @@
 1. Clone this repo.
 2. Download the LTS (long term support) version of [NodeJs](https://nodejs.org/en/).
 3. Enable execution of scripts if on windows.
-
->Run
->``` 
->Set-ExecutionPolicy RemoteSigned
->```
->in powershell launched with administrator.
->
->For more information refer to [this](https://www.itechtics.com/enable-script-execution-powershell/).
+   >Run `Set-ExecutionPolicy RemoteSigned` in powershell launched with administrator.
+   >
+   >For more information refer to [this](https://www.itechtics.com/enable-script-execution-powershell/).
 
 # Using the script
 
