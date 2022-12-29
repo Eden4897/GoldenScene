@@ -8,6 +8,8 @@
    >
    >For more information refer to [this](https://www.itechtics.com/enable-script-execution-powershell/).
 
+4. Install packages by running `npm i` in the root of this project.
+
 # Using the script
 
 1. Put all the excel files into the `input` folder.
