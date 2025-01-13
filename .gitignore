@@ -1,4 +1,16 @@
-.vscode
-node_modules
-input/*
-*.xlsx
+# Debug files
+*-debug.json
+*-debug.log
+mcl-debug.json
+mcl-debug.log
+
+# Output files
+output.xlsx
+
+# Node modules
+node_modules/
+
+# Temp files
+temp-output/
+mcl-input/
+broadway-input/

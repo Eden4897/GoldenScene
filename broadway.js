@@ -82,10 +82,10 @@ function scanFor(lines, condition, startIndex){
 }
 
 (async() => {
-  const inputs = readdirSync(path.join(__dirname, 'input'))
+  const inputs = readdirSync(path.join(__dirname, 'broadway-input'))
   
   for(const input of inputs){
-    await run(path.join(__dirname, 'input', input))
+    await run(path.join(__dirname, 'broadway-input', input))
   }
 
   await xlsx(sheets, {
