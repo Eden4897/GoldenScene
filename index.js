@@ -27,7 +27,7 @@ async function run(p){
     const [y, m, d] = date.split('/')
     const gen = new Date(1900, 0, 1)
     const now = new Date(y, m - 1, d)
-    const diff = Math.ceil((now-gen) / (1000 * 60 * 60 * 24)) + 2
+    const diff = Math.ceil((now-gen) / (1000 * 60 * 60 * 24)) + 1
     // console.log(gen, now, diff)
     // console.log(Math.ceil((new Date(2011, 7, 22)-gen) / (1000 * 60 * 60 * 24)) + 2)
     j = i
