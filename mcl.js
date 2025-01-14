@@ -32,7 +32,8 @@ function writeDebugLogs() {
 function parseDate(dateStr) {
   // For content dates in M/D/YYYY format
   const [m, d, y] = dateStr.split('/');
-  const date = new Date(y, m - 1, d);
+  // Set date to noon UTC to avoid timezone issues
+  const date = new Date(Date.UTC(parseInt(y), parseInt(m) - 1, parseInt(d), 12, 0, 0));
   if (isNaN(date.getTime())) {
     throw new Error(`Invalid date format: ${dateStr}`);
   }
@@ -241,8 +242,9 @@ function processShowData(days, currentDateStr, currentShowTime, showData, lineNu
 
   // Convert date to Excel serial number using the date string
   const [m, d, y] = currentDateStr.split('/');
-  const gen = new Date(1900, 0, 1);
-  const now = new Date(y, m - 1, d);
+  // Set date to noon UTC to avoid timezone issues
+  const gen = new Date(Date.UTC(1900, 0, 1, 12, 0, 0));
+  const now = new Date(Date.UTC(parseInt(y), parseInt(m) - 1, parseInt(d), 12, 0, 0));
   const diff = Math.ceil((now - gen) / (1000 * 60 * 60 * 24)) + 1;
 
   days.push({
