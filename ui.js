@@ -10,7 +10,8 @@ function createWindow() {
     height: 600,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      webSecurity: false // Required for handling files from archives
     }
   });
 
@@ -38,6 +39,55 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
+  }
+});
+
+// Handle dropped files
+ipcMain.handle('handle-dropped-files', async (event, type, files) => {
+  try {
+    const inputDir = path.join(__dirname, `${type}-input`);
+    console.log(`Processing ${files.length} files for ${type}`);
+    
+    // Clear the input directory
+    fs.readdirSync(inputDir).forEach(file => {
+      fs.unlinkSync(path.join(inputDir, file));
+    });
+    
+    // Process each file
+    for (const file of files) {
+      try {
+        console.log(`Processing file: ${file.name} (${file.size} bytes)`);
+        
+        const targetPath = path.join(inputDir, file.name);
+        
+        // Write the file data directly
+        if (file.data) {
+          console.log('Writing file data...');
+          fs.writeFileSync(targetPath, Buffer.from(file.data));
+          console.log(`Successfully wrote file to: ${targetPath}`);
+        } else {
+          throw new Error('No file data available');
+        }
+      } catch (error) {
+        console.error(`Error processing file ${file.name}:`, error);
+        continue;
+      }
+    }
+    
+    // Return list of successfully copied files
+    const copiedFiles = fs.readdirSync(inputDir);
+    console.log(`Successfully processed ${copiedFiles.length} files`);
+    return {
+      success: true,
+      files: copiedFiles
+    };
+    
+  } catch (error) {
+    console.error('Error in handle-dropped-files:', error);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 });
 

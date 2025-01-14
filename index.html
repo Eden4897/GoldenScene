@@ -36,6 +36,7 @@
             margin: 10px 0;
             padding: 10px;
             background-color: white;
+            border: 1px solid #e0e0e0;
             border-radius: 5px;
             height: 100px;
             overflow-y: auto;
@@ -177,6 +178,25 @@
         .file-list::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
+        .file-drop-zone {
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            background-color: white;
+        }
+
+        .file-drop-zone.drag-over {
+            border-color: #2196F3;
+            background-color: rgba(33, 150, 243, 0.1);
+        }
+
+        .file-drop-zone p {
+            margin: 0;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -189,7 +209,10 @@
                     <!-- MCL Section -->
                     <div class="section">
                         <h3>MCL Processing</h3>
-                        <p>Select PDF files to process:</p>
+                        <p>Select or drag & drop PDF files to process:</p>
+                        <div class="file-drop-zone" id="mclDropZone">
+                            <p>Drop PDF files here</p>
+                        </div>
                         <div class="file-list-header">
                             <button class="clear-all" onclick="removeAllFiles('mcl')" style="display: none;">Clear All</button>
                         </div>
@@ -205,7 +228,10 @@
                     <!-- Broadway Section -->
                     <div class="section">
                         <h3>Broadway Processing</h3>
-                        <p>Select Excel files to process:</p>
+                        <p>Select or drag & drop Excel files to process:</p>
+                        <div class="file-drop-zone" id="broadwayDropZone">
+                            <p>Drop Excel files here</p>
+                        </div>
                         <div class="file-list-header">
                             <button class="clear-all" onclick="removeAllFiles('broadway')" style="display: none;">Clear All</button>
                         </div>
@@ -232,6 +258,94 @@
 
     <script>
         const { ipcRenderer } = require('electron');
+        
+        function logToOutput(message, isError = false) {
+            const output = document.getElementById('output');
+            output.style.display = 'block';
+            const timestamp = new Date().toISOString();
+            const className = isError ? 'error' : '';
+            output.innerHTML += `\n<span class="${className}">[${timestamp}] ${message}</span>`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        // Drag and drop handling
+        function setupDragAndDrop(type) {
+            const dropZone = document.getElementById(`${type}DropZone`);
+            const validExtensions = type === 'mcl' ? ['.pdf'] : ['.xlsx', '.xls'];
+            
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+                document.body.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.add('drag-over');
+                });
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => {
+                    dropZone.classList.remove('drag-over');
+                });
+            });
+
+            dropZone.addEventListener('drop', async (e) => {
+                logToOutput('Drop event detected');
+                const files = [];
+                
+                // Log drop event details
+                logToOutput(`DataTransfer items: ${e.dataTransfer.items ? e.dataTransfer.items.length : 0}`);
+                logToOutput(`DataTransfer files: ${e.dataTransfer.files ? e.dataTransfer.files.length : 0}`);
+                
+                // Process dropped files
+                const droppedFiles = Array.from(e.dataTransfer.files);
+                logToOutput(`Processing ${droppedFiles.length} dropped files`);
+                
+                for (const file of droppedFiles) {
+                    logToOutput(`Processing file: ${file.name} (${file.size} bytes)`);
+                    
+                    if (validExtensions.some(ext => file.name.toLowerCase().endsWith(ext))) {
+                        try {
+                            // Read file as array buffer
+                            const arrayBuffer = await file.arrayBuffer();
+                            files.push({
+                                name: file.name,
+                                size: file.size,
+                                data: Array.from(new Uint8Array(arrayBuffer)) // Convert to regular array for IPC transfer
+                            });
+                            logToOutput(`Successfully read file: ${file.name}`);
+                        } catch (error) {
+                            logToOutput(`Error reading file ${file.name}: ${error.message}`, true);
+                        }
+                    }
+                }
+
+                logToOutput(`Found ${files.length} valid files`);
+
+                if (files.length > 0) {
+                    const result = await ipcRenderer.invoke('handle-dropped-files', type, files);
+                    if (result.success) {
+                        updateFileList(type, result.files);
+                        logToOutput('Files processed successfully');
+                    } else {
+                        logToOutput(`Error processing files: ${result.error}`, true);
+                    }
+                } else {
+                    logToOutput('No valid files found to process', true);
+                }
+            });
+        }
+
+        // Setup drag and drop for both sections
+        setupDragAndDrop('mcl');
+        setupDragAndDrop('broadway');
         
         async function selectFiles(type) {
             const result = await ipcRenderer.invoke('select-files', type);

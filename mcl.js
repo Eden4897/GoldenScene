@@ -234,7 +234,8 @@ function processShowData(days, currentDateStr, currentShowTime, showData, lineNu
   const showTotal = showData.amounts[showData.amounts.length - 1];
   const showAdmits = showData.admits[showData.admits.length - 1];
   
-  if (!showTotal || !showAdmits) {
+  // Allow zero values, but ensure the values are actually present
+  if (showTotal === undefined || showAdmits === undefined) {
     throw new Error(`Invalid show data at line ${lineNum}: missing total or admits`);
   }
 
@@ -259,35 +260,46 @@ function processShowData(days, currentDateStr, currentShowTime, showData, lineNu
   }, 4);
 }
 
-async function processPDF(filePath) {
-  k++;
-  console.log(`\nProcessing PDF file: ${filePath}`);
-  
-  const dataBuffer = fs.readFileSync(filePath);
-  const data = await pdf(dataBuffer);
-  
-  debugLog('Total PDF pages:', data.numpages);
-  
-  const days = await extractShowData(data.text);
-  
-  const cinema = days[0]?.meta || 'Unknown Cinema';
-  
-  sheets.push({
-    sheet: k.toString(),
-    columns: [
-      { label: 'Date', value: 'dateSerial', format: 'dd-mmm-yy' },
-      { label: 'Time', value: 'showNo' },
-      { label: 'Box Office', value: 'showTotal' },
-      { label: cinema, value: 'meta' }
-    ],
-    content: days
-  });
+// Add at the top with other global variables
+const failedFiles = [];
 
-  debugLog('Sheet added:', {
-    sheetNumber: k,
-    rowCount: days.length,
-    cinema
-  });
+async function processPDF(filePath) {
+  try {
+    k++;
+    const dataBuffer = fs.readFileSync(filePath);
+    const data = await pdf(dataBuffer);
+    const days = await extractShowData(data.text);
+    const cinema = days[0]?.meta || 'Unknown Cinema';
+    
+    sheets.push({
+      sheet: k.toString(),
+      columns: [
+        { label: 'Date', value: 'dateSerial', format: 'dd-mmm-yy' },
+        { label: 'Time', value: 'showNo' },
+        { label: 'Box Office', value: 'showTotal' },
+        { label: cinema, value: 'meta' }
+      ],
+      content: days
+    });
+
+    debugLog('Sheet added:', {
+      sheetNumber: k,
+      rowCount: days.length,
+      cinema
+    });
+    return true;
+  } catch (error) {
+    failedFiles.push({
+      file: path.basename(filePath),
+      error: error.message
+    });
+    debugLog('File Processing Error', {
+      file: path.basename(filePath),
+      error: error.message,
+      stack: error.stack
+    });
+    return false;
+  }
 }
 
 // Modify the main execution block
@@ -297,31 +309,43 @@ async function processPDF(filePath) {
     
     const inputDir = path.join(__dirname, 'mcl-input');
     const inputs = readdirSync(inputDir);
+    let totalProcessed = 0;
     
     debugLog('Found input files', inputs);
     
     for (const input of inputs) {
       if (input.toLowerCase().endsWith('.pdf')) {
-        await processPDF(path.join(inputDir, input));
+        const success = await processPDF(path.join(inputDir, input));
+        if (success) totalProcessed++;
       }
     }
 
-    debugLog('Process Complete', {
-      totalSheets: sheets.length,
-      status: 'success'
-    });
+    // Generate error report if needed
+    if (failedFiles.length > 0) {
+      console.error('\n⚠️  WARNING: Some files failed to process ⚠️');
+      console.error('Failed files:');
+      failedFiles.forEach(({ file, error }) => {
+        console.error(`❌ ${file}: ${error}`);
+      });
+      console.error(`\nProcessed ${totalProcessed} out of ${inputs.length} files successfully.`);
+    }
+
+    if (totalProcessed > 0) {
+      await xlsx(sheets, {
+        fileName: 'output'
+      });
+    } else {
+      throw new Error('No files were processed successfully');
+    }
     
-    await xlsx(sheets, {
-      fileName: 'output'
-    });
-    
-    writeDebugLogs();  // Write all logs at the end
+    writeDebugLogs();
   } catch (error) {
-    debugLog('Error', {
+    console.error('\n❌ Fatal error:', error.message);
+    debugLog('Fatal Error', {
       message: error.message,
       stack: error.stack
     });
-    writeDebugLogs();  // Write logs even on error
+    writeDebugLogs();
     process.exit(1);
   }
 })();
