@@ -4,7 +4,8 @@
   "description": "PDF Processing Tool",
   "main": "ui.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-packager . goldensceneai --platform=win32 --out=build"
   },
   "keywords": [],
   "author": "",
