@@ -212,8 +212,9 @@ async function extractShowData(text) {
   // Add metadata to first two entries
   if (days.length > 0) {
     days[0].meta = cinema;
-    if (days.length > 1) {
-      days[1].meta = movie;
+    // Always add movie name to the first entry if we have it
+    if (movie) {
+      days[0].meta = `${cinema} - ${movie}`;
     }
   }
 
