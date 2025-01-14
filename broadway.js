@@ -36,7 +36,7 @@ async function run(p) {
       const [y, m, d] = date.split('/');
       const gen = new Date(Date.UTC(1900, 0, 1, 12, 0, 0));
       const now = new Date(Date.UTC(parseInt(y), parseInt(m) - 1, parseInt(d), 12, 0, 0));
-      const diff = Math.ceil((now-gen) / (1000 * 60 * 60 * 24)) + 1;
+      const diff = Math.ceil((now-gen) / (1000 * 60 * 60 * 24)) + 2;
 
       j = i;
       while (1) {

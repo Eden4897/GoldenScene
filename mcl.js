@@ -181,9 +181,11 @@ async function extractShowData(text) {
         
         if (currentDateStr && currentShowTime && showAdmits && showTotal) {
           const [m, d, y] = currentDateStr.split('/');  // Use the string version
-          const gen = new Date(1900, 0, 1);
-          const now = new Date(y, m - 1, d);
-          const diff = Math.ceil((now - gen) / (1000 * 60 * 60 * 24)) + 1;
+          // Set date to noon UTC to avoid timezone issues
+          const gen = new Date(Date.UTC(1900, 0, 1, 12, 0, 0));
+          const now = new Date(Date.UTC(parseInt(y), parseInt(m) - 1, parseInt(d), 12, 0, 0));
+          // Add 2 to account for Excel's date system (1900 is considered leap year)
+          const diff = Math.ceil((now - gen) / (1000 * 60 * 60 * 24)) + 2;
 
           days.push({
             dateSerial: diff,
@@ -245,7 +247,8 @@ function processShowData(days, currentDateStr, currentShowTime, showData, lineNu
   // Set date to noon UTC to avoid timezone issues
   const gen = new Date(Date.UTC(1900, 0, 1, 12, 0, 0));
   const now = new Date(Date.UTC(parseInt(y), parseInt(m) - 1, parseInt(d), 12, 0, 0));
-  const diff = Math.ceil((now - gen) / (1000 * 60 * 60 * 24)) + 1;
+  // Add 2 to account for Excel's date system (1900 is considered leap year)
+  const diff = Math.ceil((now - gen) / (1000 * 60 * 60 * 24)) + 2;
 
   days.push({
     dateSerial: diff,
